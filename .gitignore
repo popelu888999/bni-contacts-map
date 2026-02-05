@@ -1,10 +1,8 @@
 # Claude Code
 .claude/
 
-# Source data files (not needed for deployment)
-*.xlsx
-*.csv
-*.kml
+# Node modules
+node_modules/
 
 # Backup files
 *.bak
@@ -13,3 +11,4 @@
 # OS files
 .DS_Store
 Thumbs.db
+nul
