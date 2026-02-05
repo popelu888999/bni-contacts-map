@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BNI商会成员地图</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0f1923;
+    color: #e8edf2;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  #map { width: 100%; height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 360px; z-index: 1000;
+    background: linear-gradient(180deg, #141e2b 0%, #0f1923 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.collapsed { transform: translateX(-360px); }
+
+  .sidebar-toggle {
+    position: fixed; top: 16px; left: 16px; z-index: 1001;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: #1a2736; border: 1px solid rgba(255,255,255,0.08);
+    color: #7eb8e0; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s; box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .sidebar-toggle:hover { background: #243447; color: #a8d8f0; }
+  .sidebar.collapsed ~ .sidebar-toggle { left: 16px; }
+  .sidebar:not(.collapsed) ~ .sidebar-toggle { left: 376px; }
+
+  .logo-area {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .logo-area h1 {
+    font-size: 20px; font-weight: 700;
+    background: linear-gradient(135deg, #4da8da, #7ec8e3);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+  }
+  .logo-area .subtitle {
+    font-size: 12px; color: #5a7a94; margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Search ── */
+  .search-box {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .search-box input {
+    width: 100%; padding: 10px 14px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #1a2736; color: #e8edf2;
+    font-size: 13px; outline: none;
+    transition: border-color 0.3s;
+  }
+  .search-box input::placeholder { color: #4a6a84; }
+  .search-box input:focus { border-color: #4da8da; }
+
+  /* ── City Filter ── */
+  .filter-bar {
+    padding: 12px 20px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .filter-btn {
+    padding: 5px 12px; border-radius: 20px; border: none;
+    font-size: 12px; cursor: pointer;
+    background: #1a2736; color: #7eb8e0;
+    border: 1px solid rgba(126,184,224,0.15);
+    transition: all 0.25s; font-family: inherit;
+  }
+  .filter-btn:hover { background: #243447; }
+  .filter-btn.active {
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 2px 8px rgba(46,134,193,0.3);
+  }
+
+  /* ── Stats ── */
+  .stats-bar {
+    padding: 10px 20px;
+    display: flex; gap: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; color: #5a7a94;
+  }
+  .stats-bar span { display: flex; align-items: center; gap: 4px; }
+  .stats-bar .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* ── Contact List ── */
+  .contact-list {
+    flex: 1; overflow-y: auto; padding: 8px 12px;
+  }
+  .contact-list::-webkit-scrollbar { width: 4px; }
+  .contact-list::-webkit-scrollbar-track { background: transparent; }
+  .contact-list::-webkit-scrollbar-thumb { background: #2a3f54; border-radius: 4px; }
+
+  .contact-card {
+    padding: 12px 14px; margin-bottom: 4px; border-radius: 10px;
+    background: rgba(26,39,54,0.5); cursor: pointer;
+    transition: all 0.25s; border: 1px solid transparent;
+  }
+  .contact-card:hover {
+    background: rgba(36,52,71,0.8);
+    border-color: rgba(77,168,218,0.2);
+  }
+  .contact-card.highlight {
+    background: rgba(46,134,193,0.15);
+    border-color: rgba(77,168,218,0.4);
+  }
+  .contact-card .card-top {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .contact-card .name {
+    font-size: 14px; font-weight: 500; color: #d4e4f0;
+  }
+  .contact-card .city-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 500;
+  }
+  .contact-card .company {
+    font-size: 12px; color: #6a8ca6; margin-top: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .contact-card .industry {
+    font-size: 11px; color: #4a6a84; margin-top: 2px;
+  }
+
+  .tag-深圳 { background: rgba(39,174,96,0.15); color: #27ae60; }
+  .tag-东莞 { background: rgba(41,128,185,0.15); color: #3498db; }
+  .tag-香港 { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .tag-佛山 { background: rgba(142,68,173,0.15); color: #9b59b6; }
+  .tag-惠州 { background: rgba(230,126,34,0.15); color: #e67e22; }
+  .tag-江苏 { background: rgba(241,196,15,0.15); color: #f1c40f; }
+  .tag-其他 { background: rgba(149,165,166,0.15); color: #95a5a6; }
+  .tag-会场 { background: rgba(231,76,60,0.2); color: #ff6b6b; }
+
+  /* ── AMap InfoWindow override ── */
+  .info-window {
+    font-family: 'Noto Sans SC', sans-serif;
+    padding: 0; min-width: 260px;
+  }
+  .info-window .iw-header {
+    padding: 14px 16px 10px;
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    border-radius: 8px 8px 0 0;
+  }
+  .info-window .iw-header h3 {
+    font-size: 15px; font-weight: 600; color: #fff; margin: 0;
+  }
+  .info-window .iw-header .iw-city {
+    font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px;
+  }
+  .info-window .iw-body {
+    padding: 12px 16px 14px; background: #fff;
+    border-radius: 0 0 8px 8px;
+  }
+  .info-window .iw-row {
+    display: flex; padding: 5px 0; font-size: 12.5px;
+    border-bottom: 1px solid #f0f2f5;
+  }
+  .info-window .iw-row:last-child { border-bottom: none; }
+  .info-window .iw-label {
+    color: #8c9bab; width: 42px; flex-shrink: 0;
+  }
+  .info-window .iw-value {
+    color: #2c3e50; flex: 1; word-break: break-all;
+  }
+  .info-window .iw-value a {
+    color: #2e86c1; text-decoration: none;
+  }
+
+  /* ── API Key Notice ── */
+  .api-notice {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 2000; background: #1a2736; border-radius: 16px;
+    padding: 36px 40px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    max-width: 440px;
+    display: none;
+  }
+  .api-notice h2 {
+    font-size: 18px; color: #7ec8e3; margin-bottom: 12px;
+  }
+  .api-notice p {
+    font-size: 13px; color: #7a9ab5; line-height: 1.7; margin-bottom: 16px;
+  }
+  .api-notice code {
+    background: #0f1923; padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; color: #4da8da;
+  }
+  .api-notice input {
+    width: 100%; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f1923; color: #e8edf2;
+    font-size: 14px; outline: none; margin-bottom: 12px;
+  }
+  .api-notice input:focus { border-color: #4da8da; }
+  .api-notice button {
+    padding: 10px 32px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    color: #fff; font-size: 14px; cursor: pointer;
+    font-family: inherit; font-weight: 500;
+    transition: all 0.3s;
+  }
+  .api-notice button:hover { box-shadow: 0 4px 16px rgba(46,134,193,0.4); }
+
+  .loading-mask {
+    position: fixed; inset: 0; z-index: 1500;
+    background: #0f1923;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    transition: opacity 0.5s;
+  }
+  .loading-mask.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 3px solid #1a2736; border-top-color: #4da8da;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-mask p { color: #5a7a94; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="loading-mask" id="loadingMask">
+  <div class="spinner"></div>
+  <p>正在加载地图...</p>
+</div>
+
+<div class="api-notice" id="apiNotice">
+  <h2>🔑 请输入高德地图API Key</h2>
+  <p>
+    本地图需要高德 JS API Key 才能运行。<br>
+    如果还没有，请到 <a href="https://lbs.amap.com" target="_blank" style="color:#4da8da">lbs.amap.com</a> 免费注册获取。<br>
+    创建应用时选择 <code>Web端(JS API)</code>
+  </p>
+  <input type="text" id="apiKeyInput" placeholder="请粘贴你的高德JS API Key..." />
+  <button onclick="loadMapWithKey()">加载地图</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="logo-area">
+    <h1>BNI 商会成员地图</h1>
+    <div class="subtitle">BUSINESS NETWORK INTERNATIONAL</div>
+  </div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍 搜索姓名、公司、行业..." oninput="filterContacts()" />
+  </div>
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="contact-list" id="contactList"></div>
+</div>
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+<div id="map"></div>
+
+<script>
+// ── Contact Data ──
+const contacts = [{"name":"乔振国","company":"深圳市看点设计有限公司","phone":"19168833296","industry":"生产制造（其他）","address":"广东省深圳市龙岗区龙城街道嶂背社区创业六路螺钢工业苑C101","lng":114.228746,"lat":22.69108,"city":"深圳","isVenue":false},{"name":"何苗春","company":"东莞市水御花桑拿服务有限公司","phone":"18826812311","industry":"保健设施/健身室/俱乐部","address":"东莞市凤岗镇政通南路21-1号海涛休闲会所","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"冯锦辉","company":"封箱胶带和拉伸膜生产公司","phone":"13823322463","industry":"橡胶及塑料","address":"深圳龙华观澜君子布兴发路3号","lng":114.10838,"lat":22.721125,"city":"深圳","isVenue":false},{"name":"刘慧燕","company":"深圳市茵悦酒业有限公司","phone":"13302312921","industry":"酒商","address":"东莞市凤岗镇恒大绿洲303-305#","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"刘春明","company":"广东塑掌柜公司","phone":"18507551906","industry":"生产制造（其他）","address":"东莞樟木头镇东深路青创大厦501","lng":114.071782,"lat":22.912981,"city":"东莞","isVenue":false},{"name":"刘海滨","company":"LED生产工厂","phone":"13411886179","industry":"生产制造（其他）","address":"长圳社区长凤路福圳工业区C栋2楼 6楼, 光明区玉塘街道, 深圳市","lng":113.924128,"lat":22.717178,"city":"深圳","isVenue":false},{"name":"刘生雄","company":"旅行社","phone":"13143268368","industry":"旅行社","address":"东莞市凤岗镇雁田天安深创谷招商中心1号楼1304-.02","lng":114.183224,"lat":22.703642,"city":"东莞","isVenue":false},{"name":"叶瑞磊（瀚鸿）","company":"3D打印服务公司","phone":"13925282886","industry":"饮品分销商","address":"东莞市凤岗镇三联古楼岭路千福大厦1A","lng":113.998148,"lat":22.989785,"city":"东莞","isVenue":false},{"name":"吴举（单美美）","company":"东莞市广乐铜业有限公司","phone":"13412869174","industry":"个人服务（其他）","address":"广东省东莞市凤岗镇凤深大道176号世纪时尚豪园8栋108","lng":114.157351,"lat":22.736781,"city":"东莞","isVenue":false},{"name":"吴罗生","company":"家装工程/装修公司","phone":"18665798462","industry":"房地产服务（其他）","address":"深圳市龙华区127陈设产业园315","lng":110.328628,"lat":20.030843,"city":"深圳","isVenue":false},{"name":"吴羿（单美美）","company":"东莞市广东铜业有限公司","phone":"13412869174","industry":"","address":"广东省东莞市凤岗镇凤深大道176号世纪时尚豪园8栋108","lng":114.157351,"lat":22.736781,"city":"东莞","isVenue":false},{"name":"周奇梁","company":"广东省麒合麟生物科技有限公司","phone":"15017482158","industry":"农业（其他）","address":"广东省深圳市龙华去鸿宇大厦2016","lng":114.024801,"lat":22.66595,"city":"深圳","isVenue":false},{"name":"周志红","company":"东莞市顺成石材有限公司","phone":"13760224836","industry":"建筑（其他）","address":"东莞市塘厦镇大坪石狮公路2号2栋","lng":114.034013,"lat":22.775063,"city":"东莞","isVenue":false},{"name":"唐俊彬","company":"SOD智能调肤","phone":"13713391345","industry":"美妆/护肤","address":"广东省东莞市凤岗镇嘉辉路7号107室","lng":114.18744,"lat":22.718358,"city":"东莞","isVenue":false},{"name":"唐燕","company":"深圳市锦晟磁电电子有限公司","phone":"13682499431","industry":"生产制造（其他）","address":"东莞市大岭山镇地塘岭路37号中慧科创产业园","lng":113.819565,"lat":22.864658,"city":"东莞","isVenue":false},{"name":"孙兴好","company":"深圳市弩利定制服饰科技有限公司","phone":"15325075566","industry":"服装","address":"龙岗区荣超金融大厦十楼1001室","lng":114.215146,"lat":22.705828,"city":"深圳","isVenue":false},{"name":"孙利娟","company":"东莞润华不锈钢有限公司","phone":"18927477942","industry":"基本金属","address":"广东省东莞市塘厦镇石鼓高原路3号","lng":114.099566,"lat":22.756533,"city":"东莞","isVenue":false},{"name":"孙大顺","company":"商家收款/支付解决方案","phone":"18026548351","industry":"财富管理","address":"深圳市南山区高新科技园嘉联支付大厦","lng":113.957495,"lat":22.538581,"city":"深圳","isVenue":false},{"name":"孙研（漫君）","company":"西柚空间设计深圳有限公司","phone":"13538138594","industry":"室内设计","address":"罗湖梨园路HALO广场一期520, 深圳, 518000","lng":114.107247,"lat":22.558307,"city":"深圳","isVenue":false},{"name":"宁丽龙","company":"物流公司","phone":"18926405022","industry":"交通及物流（其他）","address":"深圳市宝安区石岩街道捷家宝路21号（1-10层），惠州市仲恺高新区惠环立新路海关报关中心3层","lng":113.966175,"lat":22.690133,"city":"惠州","isVenue":false},{"name":"廖成勋","company":"深圳市润达二手车汽车有限公司","phone":"13590473886","industry":"汽车销售","address":"深圳市罗湖区宝岗路建达成名车广场A9","lng":114.108094,"lat":22.559131,"city":"深圳","isVenue":false},{"name":"廖泓杰","company":"深圳市金芯咨询管理有限公司","phone":"13316837016","industry":"知识产权法","address":"深圳市宝安区西乡街道银田创意园盐田商务广场A座4楼418","lng":113.859729,"lat":22.584949,"city":"深圳","isVenue":false},{"name":"张国华（张智强）","company":"塑胶配色, 生产塑胶色母, 塑胶改性","phone":"13534091068","industry":"橡胶及塑料","address":"深圳市龙华区观澜君子布兴发路3号","lng":114.10838,"lat":22.721125,"city":"深圳","isVenue":false},{"name":"张敏","company":"广东鼎和电力销售有限公司","phone":"18823038380","industry":"发电","address":"深圳市龙岗区龙翔大道4075号星知航大厦301","lng":114.225276,"lat":22.699378,"city":"深圳","isVenue":false},{"name":"张晓玲","company":"铁盒铁罐包装 马口铁印花制品","phone":"13602393621","industry":"基本金属","address":"东莞凤岗镇凤翔路56号","lng":114.163785,"lat":22.731675,"city":"东莞","isVenue":false},{"name":"张有新","company":"东莞市富电优品电源有限公司","phone":"13711697516","industry":"生产制造（其他）","address":"广东省东莞市凤岗镇深创谷E24创利大厦11楼","lng":114.184342,"lat":22.706672,"city":"东莞","isVenue":false},{"name":"张玉红","company":"东莞广济医院有限公司","phone":"13559739272","industry":"医疗服务","address":"东莞市凤岗镇雁田镇田北路56号","lng":114.167866,"lat":22.708926,"city":"东莞","isVenue":false},{"name":"张玿恒","company":"JIG 家族辦公室","phone":"19518982358","industry":"财富管理","address":"香港尖沙咀廣東道25號港威大廈2座23楼2304-05室","lng":114.172955,"lat":22.295662,"city":"香港","isVenue":false},{"name":"张钊恒","company":"JIG 家族辦公室","phone":"19518982358","industry":"","address":"香港尖沙咀广东道25號港威大厦2座23楼2304-05室","lng":114.172955,"lat":22.295662,"city":"香港","isVenue":false},{"name":"彭聪","company":"深圳市鑫凯顺塑胶制品有限公司","phone":"13691628583","industry":"橡胶及塑料","address":"深圳市平湖街道凤凰社区友城西路1号，东莞市凤岗镇金凤凰世骏工业园F栋","lng":114.134792,"lat":22.696551,"city":"东莞","isVenue":false},{"name":"戚水福","company":"东莞市金圆酒店管理有限公司","phone":"13798833873","industry":"酒店","address":"东莞市凤岗镇永盛大街107号丰琏酒店","lng":114.133329,"lat":22.742408,"city":"东莞","isVenue":false},{"name":"方建梅","company":"深圳市中瑞环保科技有限公司","phone":"18124101526","industry":"生产制造（其他）","address":"广东省深圳市龙岗区南湾街道吉厦社区旱禾坑","lng":114.16658,"lat":22.626487,"city":"深圳","isVenue":false},{"name":"易理正","company":"深圳臻翰装饰设计工程有限公司","phone":"13312930990","industry":"建筑及工程（其他）","address":"深圳市龙岗区南湾街道下李朗社区布澜路17号富通海智科技园3栋606","lng":114.1316,"lat":22.630452,"city":"深圳","isVenue":false},{"name":"曹晖","company":"深圳市德源宝新材料科技有限公司","phone":"13924637860","industry":"生产制造（其他）","address":"深圳市龙岗区新生社区联丰路31号","lng":114.280837,"lat":22.741059,"city":"深圳","isVenue":false},{"name":"曾木平","company":"东莞市中港家具有限公司","phone":"13827263786","industry":"家具生产","address":"东莞市塘厦镇塘厦大道北507号","lng":114.096891,"lat":22.828711,"city":"东莞","isVenue":false},{"name":"朱温庆","company":"深圳市六顺鑫包装材料有限公司","phone":"18123960872","industry":"橡胶及塑料","address":"深圳市龙华新区观澜街道大水田社区0500060号301北侧","lng":114.091098,"lat":22.739843,"city":"深圳","isVenue":false},{"name":"李伟","company":"卧式注塑机, 注塑机配件, 液压配件等","phone":"13600168931","industry":"生产制造（其他）","address":"东莞市凤岗镇龙平东路137号，104号-105号","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"李健","company":"品牌形象设计, logo/VI/包装设计","phone":"15818766686","industry":"品牌推广","address":"深圳市福田区梅林街道深华运输大楼12楼","lng":114.034428,"lat":22.55973,"city":"深圳","isVenue":false},{"name":"李娜","company":"东莞市易铭轩全屋定制有限公司","phone":"13751410995","industry":"家具生产","address":"深圳龙岗和中心","lng":114.260317,"lat":22.72979,"city":"深圳","isVenue":false},{"name":"李敏（宇峰）","company":"深圳市金美创制冷设备有限公司","phone":"18824244406","industry":"供暖及空调","address":"深圳市龙华区东环一路香缇雅苑40号","lng":114.043159,"lat":22.643143,"city":"深圳","isVenue":false},{"name":"李琳","company":"纺织数码印花产品生产定制","phone":"13670172087","industry":"生产制造（其他）","address":"深圳市龙岗区平湖街道新木村社区老村文新路28号401","lng":114.128881,"lat":22.671083,"city":"深圳","isVenue":false},{"name":"李美霖","company":"深圳市戴丽森事业有限公司","phone":"18680356699","industry":"个人服务（其他）","address":"深圳市龙岗区远洋新干线二期9栋123","lng":114.262719,"lat":22.718651,"city":"深圳","isVenue":false},{"name":"李鑫发","company":"深圳市东洋制冷设备有限公司","phone":"13530203817","industry":"生产制造（其他）","address":"深圳市龙岗区龙西村第三工业区17栋","lng":114.251083,"lat":22.74709,"city":"深圳","isVenue":false},{"name":"李飞云","company":"东莞市凤岗嘉泰汽车维修中心","phone":"13686624413","industry":"汽车维修","address":"东莞市凤岗镇雁田凤深大道嘉泰汽车维修中心","lng":114.094219,"lat":22.844844,"city":"东莞","isVenue":false},{"name":"杜培松","company":"深圳市叁缘广告装饰工程有限公司","phone":"13823137195","industry":"广告招牌公司","address":"深圳市龙岗区平湖街道鹅公岭社区东门路145号","lng":114.153478,"lat":22.681382,"city":"深圳","isVenue":false},{"name":"杨伟伟","company":"东莞市成良智能科技有限公司","phone":"13662834431","industry":"生产制造（其他）","address":"东莞市塘厦镇林村新太阳城科技产业园210栋10楼12楼","lng":114.101708,"lat":22.84697,"city":"东莞","isVenue":false},{"name":"杨和珍","company":"江苏隆力奇生物科技股份有限公司","phone":"91320500608246055XX0","industry":"零售（其他）","address":"江苏省常熟市辛庄镇隆力奇大道","lng":120.666745,"lat":31.503376,"city":"江苏","isVenue":false},{"name":"杨桂海","company":"深圳市俏东方珠宝有限公司","phone":"13809625539","industry":"精品珠宝","address":"深圳市罗湖区贝丽南路48号金丽珠宝交易中心","lng":114.127373,"lat":22.565005,"city":"深圳","isVenue":false},{"name":"段光明","company":"深圳市麦岸精酿啤酒有限公司","phone":"13189068379","industry":"酒商","address":"宝安区沙井街道和一社区南环路钰一新三洋工业区二期F1栋801","lng":113.797082,"lat":22.718391,"city":"深圳","isVenue":false},{"name":"涂冬明","company":"深圳市恒隆家具有限公司","phone":"13414313319","industry":"室内建筑","address":"深圳市南山区西丽大勘村王京坑87号","lng":113.975694,"lat":22.621243,"city":"深圳","isVenue":false},{"name":"涂欣欣","company":"东莞市凤岗亿成食品店","phone":"13538395365","industry":"财产及意外伤害险","address":"凤岗镇雁田镇田北路91号184室","lng":114.166127,"lat":22.707535,"city":"东莞","isVenue":false},{"name":"熊三宝","company":"深圳恒软科技有限公司","phone":"15818723965","industry":"电脑及编程（其他）","address":"深圳市龙岗区平湖街道广弘中心B栋707","lng":114.120947,"lat":22.682657,"city":"深圳","isVenue":false},{"name":"王先魏","company":"名烟名酒批发","phone":"13670013528","industry":"个人服务（其他）","address":"龙岗区平湖街道铺城坳社区白龙头18号, 深圳市","lng":114.134039,"lat":22.684255,"city":"深圳","isVenue":false},{"name":"王婷婷","company":"东莞市凤岗海悦鲜花礼仪店","phone":"13642945286","industry":"花店","address":"东莞市凤岗镇永盛大街21号128室","lng":114.142381,"lat":22.744662,"city":"东莞","isVenue":false},{"name":"王媛媛","company":"专业核心服务（环境策划、运势提升、命理预测）","phone":"13265746722","industry":"个人服务（其他）","address":"东莞市凤岗镇凤深大道281南天大厦806","lng":114.164204,"lat":22.713107,"city":"东莞","isVenue":false},{"name":"王春玉","company":"深圳市盛禾源贸易有限公司","phone":"15774656310","industry":"食品服务","address":"广东省深圳市龙岗区凤凰大道 五常大米厂家直销","lng":114.150369,"lat":22.690857,"city":"深圳","isVenue":false},{"name":"王炳霞","company":"深圳市天生源茶业访茗有限公司","phone":"13530379271","industry":"茶商","address":"龙岗区平湖白泥坑塘边路一号综合楼三楼","lng":114.15194,"lat":22.649042,"city":"深圳","isVenue":false},{"name":"王露","company":"深圳市宝鸿鑫家居有限公司（摩恩卫浴）","phone":"18123785309","industry":"生产制造（其他）","address":"深圳市宝安区石岩街道宝石东路366号恒泰商务楼606","lng":113.944732,"lat":22.6807,"city":"深圳","isVenue":false},{"name":"章洁","company":"灯具制造商服务商","phone":"18617100038","industry":"包装","address":"深圳市罗湖区艺展楼尚创意园2楼215","lng":114.131611,"lat":22.548309,"city":"深圳","isVenue":false},{"name":"罗朝中","company":"监控安防系统电脑销售弱电工程","phone":"13554917773","industry":"建筑及工程（其他）","address":"深圳市龙岗区平湖华南城五号交易广场1D135","lng":114.127154,"lat":22.676807,"city":"深圳","isVenue":false},{"name":"罗灿","company":"银行贷款融资服务","phone":"13510209991","industry":"商业融资","address":"深圳市龙岗区天健云图3-501","lng":114.246884,"lat":22.720889,"city":"深圳","isVenue":false},{"name":"肖敏娟","company":"东莞市宏晨电子科技有限公司","phone":"13717183687","industry":"生产制造（其他）","address":"凤岗天安深创谷2 8栋202","lng":114.183312,"lat":22.705395,"city":"东莞","isVenue":false},{"name":"胡小民","company":"东莞市凤岗景冈赣菜馆","phone":"18665122853","industry":"餐厅","address":"广东省东莞市凤岗镇金凤凰大道69号, 凤岗镇","lng":114.16633,"lat":22.742801,"city":"东莞","isVenue":false},{"name":"胡展明","company":"海尔电器一站式电器服务","phone":"13751147138","industry":"零售（其他）","address":"深圳市龙岗区平湖街道鹅公岭坪龙大街11号","lng":114.154683,"lat":22.673549,"city":"深圳","isVenue":false},{"name":"胡灿荣","company":"东莞市创鑫汽车装饰","phone":"13751442401","industry":"汽车零部件","address":"广东省东莞市凤岗凤深大道深环路口1号铺","lng":114.16357,"lat":22.721548,"city":"东莞","isVenue":false},{"name":"蔡伟新","company":"广东新宸建设有限公司","phone":"13168983928","industry":"建筑（其他）","address":"东莞市樟木头镇东深路樟木头段127号201室","lng":114.049415,"lat":22.908181,"city":"东莞","isVenue":false},{"name":"袁树庆（富贵）","company":"红酒行业原品原装进口","phone":"13715338565","industry":"酒商","address":"深圳市龙岗区平湖华南城2号交易广场B1E区003号","lng":114.131016,"lat":22.679038,"city":"深圳","isVenue":false},{"name":"覃犇(亦彬)","company":"短视频策划拍摄、IP打造、企业宣传片拍摄","phone":"15013494191","industry":"市场推广（其他）","address":"深圳市龙华区大唐时代B座610-612","lng":114.041422,"lat":22.665133,"city":"深圳","isVenue":false},{"name":"谢君漫（小菊）","company":"深圳市同城贷金融服务有限公司","phone":"13903025186","industry":"房地产租赁","address":"深圳市龙岗正中时代B座2108","lng":114.253385,"lat":22.691572,"city":"深圳","isVenue":false},{"name":"谢文浩","company":"广东一亩田粮油有限公司","phone":"15816943744","industry":"餐饮（其他）","address":"广东省佛山市高明区明城镇高明大道西346号2号","lng":112.711601,"lat":22.859254,"city":"佛山","isVenue":false},{"name":"赵世帅","company":"均逸实业有限公司","phone":"13827249125","industry":"生产制造（其他）","address":"东莞市谢岗镇竹园新村振兴大道346号","lng":113.793498,"lat":23.041962,"city":"东莞","isVenue":false},{"name":"邓文才","company":"半导体电子元器件","phone":"13724365878","industry":"生产制造（其他）","address":"东莞市凤岗镇塘沥村石碑路A88号","lng":114.164326,"lat":22.735848,"city":"东莞","isVenue":false},{"name":"邓淑霞","company":"东莞市凤岗创新教育培训中心有限公司","phone":"13268716606","industry":"培训及训练（其他）","address":"广东省东莞市凤岗镇金鹏路19号1栋306室","lng":114.165914,"lat":22.738876,"city":"东莞","isVenue":false},{"name":"邹海滢","company":"东莞市轻天下健康管理咨询服务有限公司","phone":"13925860137","industry":"健康（其他）","address":"东莞市凤岗镇金凤凰大道129号104室","lng":114.16077,"lat":22.736662,"city":"东莞","isVenue":false},{"name":"邹莉玲","company":"社群团购 专注品质好物","phone":"13723700926","industry":"市场推广（其他）","address":"深圳市龙岗区吉华街道三联村三联珠宝城G栋6楼","lng":114.113764,"lat":22.629169,"city":"深圳","isVenue":false},{"name":"郑海文","company":"深圳市鑫卓美木业有限公司","phone":"15019483348","industry":"零售（其他）","address":"深圳市南山区西丽大勘村瑞丰厂东区2号车间101","lng":113.977587,"lat":22.615356,"city":"深圳","isVenue":false},{"name":"郭强","company":"惠州市宏鑫胜建材有限公司","phone":"13048705666","industry":"建筑（其他）","address":"惠州市大亚湾西区龙海二路11号","lng":114.490022,"lat":22.753173,"city":"惠州","isVenue":false},{"name":"郭成华","company":"东莞市佳烨汽车服务有限公司","phone":"13560888165","industry":"汽车维修","address":"东莞市凤岗镇凤平路76号一102号","lng":114.13595,"lat":22.733307,"city":"东莞","isVenue":false},{"name":"郭成山","company":"深圳市和兴装饰有限公司","phone":"13798202324","industry":"建筑及工程（其他）","address":"深圳龙岗区新木村新木路181-1","lng":114.136791,"lat":22.664862,"city":"深圳","isVenue":false},{"name":"钟尉强","company":"东莞市海宇窗帘有限公司","phone":"13509847222","industry":"窗帘/百叶窗","address":"东莞市凤岗镇雁田村怡安新村第4栋怡华楼2楼B段","lng":114.167297,"lat":22.692108,"city":"东莞","isVenue":false},{"name":"陈丽","company":"小飞领航（深圳）科技有限公司","phone":"13580939913","industry":"培训及训练（其他）","address":"东莞市凤岗雁田翠湖豪苑东门32栋一楼","lng":114.161548,"lat":22.690718,"city":"东莞","isVenue":false},{"name":"陈伟","company":"家/商用净饮水设备与空气净化/护理设备","phone":"13641418662","industry":"个人服务（其他）","address":"深圳市龙华区福城街道福花路9号，龙华科兴科学园B栋705","lng":114.025912,"lat":22.717921,"city":"深圳","isVenue":false},{"name":"陈健龙","company":"东莞市凤岗中兴纸品加工厂","phone":"18575416813","industry":"包装","address":"东莞市凤岗镇黄洞田心路52号","lng":114.161742,"lat":22.751478,"city":"东莞","isVenue":false},{"name":"陈国政","company":"劳保用品、办公用品、包装材料等","phone":"13823349213","industry":"零售（其他）","address":"平湖镇鹅公岭东门路56号，龙岗区，深圳市","lng":114.156494,"lat":22.679313,"city":"深圳","isVenue":false},{"name":"陈妹","company":"东莞市志明表业有限公司","phone":"13751439589","industry":"电子产品零售","address":"广东省东莞市凤岗镇雁田村南山工业城B2栋3楼","lng":114.176541,"lat":22.699434,"city":"东莞","isVenue":false},{"name":"陈庚文","company":"专业防水25年，专治疑难杂症","phone":"15986533787","industry":"建筑及工程（其他）","address":"塘厦镇大坪村，四黎南路145号之115，东莞市","lng":114.036617,"lat":22.78092,"city":"东莞","isVenue":false},{"name":"陈锦辉","company":"广东都市投资管理有限公司","phone":"18666444704","industry":"房地产服务（其他）","address":"东莞市凤岗镇","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"陈飞兰","company":"德佑地产凤岗体育馆康昌路分店","phone":"18028988969","industry":"房地产服务（其他）","address":"广东省东莞市凤岗昌盛南路与康昌路交叉口西40米","lng":114.138538,"lat":22.740256,"city":"东莞","isVenue":false},{"name":"雷慧","company":"广州慕茗茶业有限公司","phone":"18122917750","industry":"茶商","address":"凤岗天安数码城S24三楼","lng":114.179373,"lat":22.694749,"city":"东莞","isVenue":false},{"name":"雷明亮","company":"东莞九顺餐饮管理有限公司","phone":"13902640365","industry":"餐厅","address":"东莞市凤岗镇京东路1号19号楼","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"马思科","company":"广东国晖（龙岗）律师事务所","phone":"15820726723","industry":"律师","address":"龙岗区龙城街道清林东路5号","lng":114.240991,"lat":22.711962,"city":"深圳","isVenue":false},{"name":"马慧玲","company":"德胜博导国际教育科技（北京）有限公司深圳分公司","phone":"13267413143","industry":"教育设施","address":"深圳市龙岗区龙城街道爱联社区中粮祥云2栋A座2112","lng":114.231979,"lat":22.695589,"city":"深圳","isVenue":false},{"name":"魏朝霞","company":"中国平安","phone":"13717188180","industry":"人寿及伤残保险","address":"东莞市凤岗镇凤深大道172号贝斯达大厦1309室","lng":114.155095,"lat":22.738488,"city":"东莞","isVenue":false},{"name":"鲁佳丽","company":"新会陈皮批发销售","phone":"13543796686","industry":"零售（其他）","address":"凤岗翡翠山湖商业中心C17-C19栋, 东莞市凤岗镇","lng":114.136944,"lat":22.74695,"city":"东莞","isVenue":false},{"name":"黄俊峰","company":"华谷科技","phone":"13714691872","industry":"电子通讯（其他）","address":"龙华区观澜街道大水田代美工业园A栋2-5层, 深圳","lng":114.099962,"lat":22.739681,"city":"深圳","isVenue":false},{"name":"黄小艳","company":"深圳森果口腔门诊部","phone":"13692256328","industry":"健康（其他）","address":"深圳市龙岗区平湖社区凤凰大道高原路森果齿科","lng":114.143821,"lat":22.694111,"city":"深圳","isVenue":false},{"name":"黄忠","company":"深圳市中霖创科技有限公司","phone":"138237262260","industry":"电子设备生产","address":"深圳市坪山区坪山大道龙光玖云著2栋809-810","lng":114.330775,"lat":22.68034,"city":"深圳","isVenue":false},{"name":"黄洪标","company":"厨具源头工厂","phone":"15813823640","industry":"生产制造（其他）","address":"东莞市塘厦镇南屏路33号振龙工业园","lng":114.127753,"lat":22.770073,"city":"东莞","isVenue":false},{"name":"黄立","company":"深圳市炳鑫纸品包装有限公司","phone":"13823533585","industry":"包装","address":"深圳龙岗平湖新厦工业城52号","lng":114.124358,"lat":22.707393,"city":"深圳","isVenue":false},{"name":"黎宏","company":"东莞市企智慧财税科技有限公司","phone":"13528616576","industry":"金融及保险（其他）","address":"广东省东莞市凤岗镇凤岗永盛大街168号东盛大厦二楼","lng":114.12899,"lat":22.740785,"city":"东莞","isVenue":false},{"name":"龙世寒","company":"深圳市升龙品牌管理有限公司","phone":"15118057551","industry":"摄影师 - 商业","address":"深圳市平湖街道华南城一号交易中心4E062","lng":114.127154,"lat":22.676807,"city":"深圳","isVenue":false},{"name":"龙春有","company":"深圳路易视康科技有限公司","phone":"13925700211","industry":"教育培训服务/家庭教师","address":"东莞市凤岗镇雁田京东智谷一栋105号","lng":113.87348,"lat":22.971112,"city":"东莞","isVenue":false},{"name":"龙杨浩","company":"魅格彩宝","phone":"13922818612","industry":"时尚珠宝","address":"深圳市罗湖区翠竹街道彩宝城F1309, 魅格彩宝","lng":114.130139,"lat":22.556819,"city":"深圳","isVenue":false},{"name":"陆海波","company":"深圳宝联智汇科技有限公司","phone":"","industry":"","address":"深圳市龙华区康脉科技工业园1栋406","lng":114.036872,"lat":22.705301,"city":"深圳","isVenue":false},{"name":"BNI周五会场","company":"丰景酒店","phone":"","industry":"","address":"东莞市凤岗镇永盛大街107号","lng":114.133329,"lat":22.742408,"city":"东莞","isVenue":true}];
+
+const cityColors = {
+  '深圳': '#27ae60', '东莞': '#3498db', '香港': '#e74c3c',
+  '佛山': '#9b59b6', '惠州': '#e67e22', '江苏': '#f1c40f', '其他': '#95a5a6'
+};
+
+let map, markers = [], infoWindow, activeFilter = '全部', highlightIdx = -1;
+
+// ── API Key handling ──
+function checkApiKey() {
+  const saved = localStorage.getItem('amap_api_key');
+  if (saved) {
+    loadAMapScript(saved);
+  } else {
+    document.getElementById('loadingMask').classList.add('hidden');
+    document.getElementById('apiNotice').style.display = 'block';
+  }
+}
+
+function loadMapWithKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return alert('请输入有效的API Key');
+  localStorage.setItem('amap_api_key', key);
+  document.getElementById('apiNotice').style.display = 'none';
+  document.getElementById('loadingMask').classList.remove('hidden');
+  loadAMapScript(key);
+}
+
+function loadAMapScript(key) {
+  const s = document.createElement('script');
+  s.src = `https://webapi.amap.com/maps?v=2.0&key=${key}`;
+  s.onload = () => initMap();
+  s.onerror = () => {
+    localStorage.removeItem('amap_api_key');
+    alert('API Key无效或网络错误，请重试');
+    location.reload();
+  };
+  document.head.appendChild(s);
+}
+
+// ── Map Init ──
+function initMap() {
+  map = new AMap.Map('map', {
+    zoom: 11, center: [114.14, 22.72],
+    mapStyle: 'amap://styles/dark',
+    viewMode: '2D'
+  });
+
+  infoWindow = new AMap.InfoWindow({ offset: new AMap.Pixel(0, -36), isCustom: true });
+
+  contacts.forEach((c, i) => {
+    const color = c.isVenue ? '#ff6b6b' : (cityColors[c.city] || '#95a5a6');
+    const size = c.isVenue ? 14 : 9;
+    const marker = new AMap.Marker({
+      position: [c.lng, c.lat],
+      content: `<div style="width:${size*2}px;height:${size*2}px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);cursor:pointer;transform:translate(-50%,-50%);"></div>`,
+      offset: new AMap.Pixel(0, 0),
+      zIndex: c.isVenue ? 200 : 100
+    });
+    marker.contactIdx = i;
+    marker.on('click', () => showInfo(i));
+    marker.setMap(map);
+    markers.push(marker);
+  });
+
+  buildFilters();
+  buildList();
+  document.getElementById('loadingMask').classList.add('hidden');
+}
+
+function showInfo(idx) {
+  const c = contacts[idx];
+  const phoneHtml = c.phone ? `<a href="tel:${c.phone}">${c.phone}</a>` : '-';
+  const html = `<div class="info-window">
+    <div class="iw-header">
+      <h3>${c.isVenue ? '📍 ' : ''}${c.name}</h3>
+      <div class="iw-city">${c.city} · ${c.industry || '未分类'}</div>
+    </div>
+    <div class="iw-body">
+      <div class="iw-row"><span class="iw-label">公司</span><span class="iw-value">${c.company}</span></div>
+      <div class="iw-row"><span class="iw-label">电话</span><span class="iw-value">${phoneHtml}</span></div>
+      <div class="iw-row"><span class="iw-label">地址</span><span class="iw-value">${c.address}</span></div>
+    </div>
+  </div>`;
+  infoWindow.setContent(html);
+  infoWindow.open(map, [c.lng, c.lat]);
+  map.setZoomAndCenter(14, [c.lng, c.lat]);
+  highlightCard(idx);
+}
+
+// ── Sidebar ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function buildFilters() {
+  const cities = ['全部', ...new Set(contacts.filter(c=>!c.isVenue).map(c=>c.city))];
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = cities.map(c => {
+    const count = c === '全部' ? contacts.filter(x=>!x.isVenue).length : contacts.filter(x=>x.city===c&&!x.isVenue).length;
+    return `<button class="filter-btn ${c===activeFilter?'active':''}" onclick="setFilter('${c}')">${c}(${count})</button>`;
+  }).join('');
+  updateStats();
+}
+
+function setFilter(city) {
+  activeFilter = city;
+  buildFilters();
+  filterContacts();
+}
+
+function updateStats() {
+  const visible = getFiltered();
+  const bar = document.getElementById('statsBar');
+  const cityCounts = {};
+  visible.forEach(c => { cityCounts[c.city] = (cityCounts[c.city]||0)+1; });
+  bar.innerHTML = `<span>显示 <b style="color:#e8edf2">${visible.length}</b> 位成员</span>`;
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  return contacts.filter(c => {
+    if (c.isVenue) return false;
+    if (activeFilter !== '全部' && c.city !== activeFilter) return false;
+    if (q && !(c.name.toLowerCase().includes(q) || c.company.toLowerCase().includes(q) || c.industry.toLowerCase().includes(q) || c.phone.includes(q))) return false;
+    return true;
+  });
+}
+
+function filterContacts() {
+  const filtered = getFiltered();
+  const filteredSet = new Set(filtered);
+
+  contacts.forEach((c, i) => {
+    if (c.isVenue) { markers[i].show(); return; }
+    filteredSet.has(c) ? markers[i].show() : markers[i].hide();
+  });
+
+  buildList(filtered);
+  updateStats();
+}
+
+function buildList(list) {
+  list = list || getFiltered();
+  const el = document.getElementById('contactList');
+  el.innerHTML = list.map((c, li) => {
+    const idx = contacts.indexOf(c);
+    const tagClass = c.isVenue ? 'tag-会场' : `tag-${c.city}`;
+    return `<div class="contact-card" id="card-${idx}" onclick="showInfo(${idx})">
+      <div class="card-top">
+        <span class="name">${c.name}</span>
+        <span class="city-tag ${tagClass}">${c.isVenue?'会场':c.city}</span>
+      </div>
+      <div class="company">${c.company}</div>
+      ${c.industry ? `<div class="industry">${c.industry}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Add venue card at bottom
+  const venue = contacts.find(c => c.isVenue);
+  if (venue) {
+    const vi = contacts.indexOf(venue);
+    el.innerHTML += `<div class="contact-card" id="card-${vi}" onclick="showInfo(${vi})" style="border:1px solid rgba(255,107,107,0.2);margin-top:8px;">
+      <div class="card-top">
+        <span class="name">📍 ${venue.name}</span>
+        <span class="city-tag tag-会场">会场</span>
+      </div>
+      <div class="company">${venue.company} · ${venue.address}</div>
+    </div>`;
+  }
+}
+
+function highlightCard(idx) {
+  document.querySelectorAll('.contact-card.highlight').forEach(el => el.classList.remove('highlight'));
+  const card = document.getElementById(`card-${idx}`);
+  if (card) {
+    card.classList.add('highlight');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// ── Start ──
+window.onload = checkApiKey;
+</script>
+</body>
+</html>
