@@ -1077,34 +1077,27 @@
             navOptions.style.display = navOptions.style.display === 'none' ? 'grid' : 'none';
         }
 
-        // 腾讯地图导航
+        // 腾讯地图导航（使用地址搜索）
         function openTencentMap(contact) {
-            const url = `https://apis.map.qq.com/uri/v1/marker?marker=coord:${contact.lat},${contact.lng};title:${encodeURIComponent(contact.name)};addr:${encodeURIComponent(contact.address)}&referer=BNI`;
+            const url = `https://apis.map.qq.com/uri/v1/search?keyword=${encodeURIComponent(contact.address)}&referer=BNI`;
             window.location.href = url;
         }
 
-        // 高德地图导航
+        // 高德地图导航（使用地址搜索）
         function openAmap(contact) {
-            const url = `https://uri.amap.com/marker?position=${contact.lng},${contact.lat}&name=${encodeURIComponent(contact.name)}&coordinate=gaode&callnative=1`;
+            const url = `https://uri.amap.com/search?keyword=${encodeURIComponent(contact.address)}&callnative=1`;
             window.location.href = url;
         }
 
-        // 百度地图导航
+        // 百度地图导航（使用地址搜索）
         function openBaiduMap(contact) {
-            const x = contact.lng;
-            const y = contact.lat;
-            const z = Math.sqrt(x * x + y * y) + 0.00002 * Math.sin(y * Math.PI * 3000 / 180);
-            const theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * Math.PI * 3000 / 180);
-            const bd_lng = z * Math.cos(theta) + 0.0065;
-            const bd_lat = z * Math.sin(theta) + 0.006;
-
-            const url = `https://api.map.baidu.com/marker?location=${bd_lat},${bd_lng}&title=${encodeURIComponent(contact.name)}&content=${encodeURIComponent(contact.address)}&output=html&coord_type=bd09ll`;
+            const url = `https://api.map.baidu.com/place/search?query=${encodeURIComponent(contact.address)}&region=全国&output=html`;
             window.location.href = url;
         }
 
-        // 苹果地图导航
+        // 苹果地图导航（使用地址搜索）
         function openAppleMap(contact) {
-            const url = `https://maps.apple.com/?q=${encodeURIComponent(contact.name)}&ll=${contact.lat},${contact.lng}`;
+            const url = `https://maps.apple.com/?q=${encodeURIComponent(contact.address)}`;
             window.location.href = url;
         }
 
