@@ -747,7 +747,7 @@
             <input type="text" id="mapSearchInput" placeholder="搜索联系人...">
         </div>
         <div class="map-stats">
-            显示 <span id="mapCount">0</span> 位联系人
+            匹配 <span id="mapCount">0</span> 位联系人
         </div>
         <div class="map-legend">
             <div class="legend-title">图例</div>
@@ -1233,16 +1233,22 @@
         // 地图搜索
         function filterMapMarkers(term) {
             if (!term) {
-                addMarkers(contacts);
                 fitMapBounds(contacts);
+                document.getElementById('mapCount').textContent = contacts.length;
                 return;
             }
 
             const filtered = contacts.filter(c => matchSearch(c, term.toLowerCase()));
-            addMarkers(filtered);
+            document.getElementById('mapCount').textContent = filtered.length + '/' + contacts.length;
 
             if (filtered.length > 0) {
                 fitMapBounds(filtered);
+                // 打开第一个匹配联系人的弹窗
+                const firstMatch = filtered[0];
+                const markerIndex = contacts.indexOf(firstMatch);
+                if (markers[markerIndex]) {
+                    markers[markerIndex].openPopup();
+                }
             }
         }
 
