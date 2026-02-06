@@ -7,6 +7,14 @@
   <Style id="euroIcon"><IconStyle><color>ff00d4ff</color><scale>1.2</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/euro.png</href></Icon></IconStyle></Style>
   <Style id="poundIcon"><IconStyle><color>ff00d4ff</color><scale>1.0</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/dollar.png</href></Icon></IconStyle></Style>
   <Placemark>
+    <name>陆海波</name>
+    <description><![CDATA[公司: 深圳宝联智汇科技有限公司<br>电话: 18680321930<br>行业: 高温蒸汽厨具<br>地址: 深圳市龙华区康脉科技工业园1栋406]]></description>
+    <styleUrl>#poundIcon</styleUrl>
+    <Point>
+      <coordinates>114.036872,22.705301,0</coordinates>
+    </Point>
+  </Placemark>
+  <Placemark>
     <name>乔振国</name>
     <description><![CDATA[公司: 深圳市看点设计有限公司<br>电话: 19168833296<br>行业: 生产制造（其他）<br>地址: 广东省深圳市龙岗区龙城街道嶂背社区创业六路螺钢工业苑C101]]></description>
     <styleUrl>#dollarIcon</styleUrl>
@@ -844,14 +852,6 @@
     <styleUrl>#dollarIcon</styleUrl>
     <Point>
       <coordinates>114.130139,22.556819,0</coordinates>
-    </Point>
-  </Placemark>
-  <Placemark>
-    <name>陆海波</name>
-    <description><![CDATA[公司: 深圳宝联智汇科技有限公司<br>电话: 18680321930<br>行业: 高温蒸汽厨具<br>地址: 深圳市龙华区康脉科技工业园1栋406]]></description>
-    <styleUrl>#poundIcon</styleUrl>
-    <Point>
-      <coordinates>114.036872,22.705301,0</coordinates>
     </Point>
   </Placemark>
   <Placemark>
