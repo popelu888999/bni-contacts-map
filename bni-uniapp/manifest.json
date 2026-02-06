@@ -1,0 +1,72 @@
+{
+    "name": "BNI商会成员地图",
+    "appid": "__UNI__BNI_MAP",
+    "description": "BNI商会成员位置查询与导航",
+    "versionName": "1.0.0",
+    "versionCode": "100",
+    "transformPx": false,
+    "app-plus": {
+        "usingComponents": true,
+        "nvueStyleCompiler": "uni-app",
+        "compilerVersion": 3,
+        "splashscreen": {
+            "alwaysShowBeforeRender": true,
+            "waiting": true,
+            "autoclose": true,
+            "delay": 0
+        },
+        "modules": {
+            "Maps": {}
+        },
+        "distribute": {
+            "android": {
+                "permissions": [
+                    "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.CALL_PHONE\"/>"
+                ]
+            },
+            "ios": {},
+            "sdkConfigs": {
+                "maps": {
+                    "amap": {
+                        "appkey_ios": "",
+                        "appkey_android": ""
+                    }
+                }
+            }
+        }
+    },
+    "quickapp": {},
+    "mp-weixin": {
+        "appid": "",
+        "setting": {
+            "urlCheck": false
+        },
+        "usingComponents": true,
+        "permission": {
+            "scope.userLocation": {
+                "desc": "获取您的位置信息用于导航"
+            }
+        }
+    },
+    "mp-alipay": {
+        "usingComponents": true
+    },
+    "mp-baidu": {
+        "usingComponents": true
+    },
+    "mp-toutiao": {
+        "usingComponents": true
+    },
+    "uniStatistics": {
+        "enable": false
+    },
+    "h5": {
+        "devServer": {
+            "port": 8080
+        }
+    }
+}
