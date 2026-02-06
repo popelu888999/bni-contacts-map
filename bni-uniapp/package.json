@@ -1,0 +1,16 @@
+{
+  "name": "bni-uniapp",
+  "version": "1.0.0",
+  "description": "这是BNI商会成员地图的uni-app版本，支持编译到多个平台： - 微信小程序 - 支付宝小程序 - H5网页 - Android App - iOS App",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
+}

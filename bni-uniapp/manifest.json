@@ -1,7 +1,7 @@
 {
-    "name": "BNI商会成员地图",
+    "name": "BNI凤高成员地图",
     "appid": "__UNI__BNI_MAP",
-    "description": "BNI商会成员位置查询与导航",
+    "description": "BNI凤高分会成员位置查询与导航",
     "versionName": "1.0.0",
     "versionCode": "100",
     "transformPx": false,
@@ -19,6 +19,32 @@
             "Maps": {}
         },
         "distribute": {
+            "icons": {
+                "android": {
+                    "hdpi": "static/icons/icon-72.png",
+                    "xhdpi": "static/icons/icon-96.png",
+                    "xxhdpi": "static/icons/icon-144.png",
+                    "xxxhdpi": "static/icons/icon-192.png"
+                },
+                "ios": {
+                    "appstore": "static/icons/icon-1024.png",
+                    "iphone": {
+                        "app@2x": "static/icons/icon-120.png",
+                        "app@3x": "static/icons/icon-180.png",
+                        "spotlight@2x": "static/icons/icon-80.png",
+                        "spotlight@3x": "static/icons/icon-120.png",
+                        "settings@2x": "static/icons/icon-58.png",
+                        "settings@3x": "static/icons/icon-87.png",
+                        "notification@2x": "static/icons/icon-40.png",
+                        "notification@3x": "static/icons/icon-60.png"
+                    },
+                    "ipad": {
+                        "app": "static/icons/icon-76.png",
+                        "app@2x": "static/icons/icon-152.png",
+                        "proapp@2x": "static/icons/icon-167.png"
+                    }
+                }
+            },
             "android": {
                 "permissions": [
                     "<uses-permission android:name=\"android.permission.INTERNET\"/>",
@@ -67,6 +93,7 @@
     "h5": {
         "devServer": {
             "port": 8080
-        }
+        },
+        "title": "BNI凤高成员地图"
     }
 }
