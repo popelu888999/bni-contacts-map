@@ -95,14 +95,6 @@
     </Point>
   </Placemark>
   <Placemark>
-    <name>吴羿（单美美）</name>
-    <description><![CDATA[公司: 东莞市广东铜业有限公司<br>电话: 13412869174<br>行业: <br>地址: 广东省东莞市凤岗镇凤深大道176号世纪时尚豪园8栋108]]></description>
-    <styleUrl>#dollarIcon</styleUrl>
-    <Point>
-      <coordinates>114.157351,22.736781,0</coordinates>
-    </Point>
-  </Placemark>
-  <Placemark>
     <name>周奇梁</name>
     <description><![CDATA[公司: 广东省麒合麟生物科技有限公司<br>电话: 15017482158<br>行业: 农业（其他）<br>地址: 广东省深圳市龙华区鸿宇大厦2016]]></description>
     <styleUrl>#dollarIcon</styleUrl>
