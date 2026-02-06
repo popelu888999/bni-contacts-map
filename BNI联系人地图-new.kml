@@ -854,5 +854,13 @@
       <coordinates>114.133329,22.742408,0</coordinates>
     </Point>
   </Placemark>
+  <Placemark>
+    <name>刘晓军</name>
+    <description><![CDATA[公司: 东莞市晟驰新能源有限公司<br>电话: 13113058999<br>行业: 建筑及工程（其他）<br>地址: 东莞市凤岗镇天安数码城4号楼804]]></description>
+    <styleUrl>#dollarIcon</styleUrl>
+    <Point>
+      <coordinates>114.179373,22.694749,0</coordinates>
+    </Point>
+  </Placemark>
 </Document>
 </kml>
